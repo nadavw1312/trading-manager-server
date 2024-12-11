@@ -1,0 +1,83 @@
+{
+  "name": "SmaCrossover",
+  "symbol": "SMAC",
+  "class_name": "SmaCrossover",
+  "short_description": "Enter long when price crosses above the short SMA and the short SMA is above the long SMA. Enter short when the price crosses below the short SMA and the short SMA is below the long SMA.",
+  "long_description": "This condition uses two Simple Moving Averages (SMAs) with different periods (short and long) to identify potential entry points based on crossovers between the price and the SMAs. When the price crosses above the short SMA and the short SMA is above the long SMA, it generates a long entry signal. Conversely, when the price crosses below the short SMA and the short SMA is below the long SMA, it generates a short entry signal.",
+  "trader_usage_example": "A trader could use this condition to enter long or short positions based on the momentum and trend indicated by the crossover of the price and the SMAs.",
+  "programmer_usage_example": "SmaCrossover.calc(dfs, params={'condition_timeframe': '5m', 'short_sma_window': 20, 'long_sma_window': 50, 'is_long': True})",
+  "is_only_exit": false,
+  "actions": [
+    "cross above",
+    "cross below",
+    "greater than",
+    "less than"
+  ],
+  "logical_operators": [
+    "and"
+  ],
+  "params": {
+    "condition_timeframe": "5m",
+    "short_sma_window": 20,
+    "long_sma_window": 50,
+    "is_long": true
+  },
+  "params_fields": {
+    "condition_timeframe": {
+      "type": "string",
+      "options": [
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "60m",
+        "90m",
+        "1d",
+        "5d",
+        "1wk",
+        "1mo",
+        "3mo"
+      ],
+      "title": "Condition Timeframe",
+      "description": "Timeframe for evaluating the condition"
+    },
+    "short_sma_window": {
+      "type": "int",
+      "range": [
+        1,
+        1000
+      ],
+      "title": "Short SMA Window",
+      "description": "Window size for the short SMA"
+    },
+    "long_sma_window": {
+      "type": "int",
+      "range": [
+        1,
+        1000
+      ],
+      "title": "Long SMA Window",
+      "description": "Window size for the long SMA"
+    },
+    "is_long": {
+      "type": "boolean",
+      "title": "Is Long",
+      "description": "Indicates if the condition is for a long position"
+    }
+  },
+  "identifiers": [
+    "SMA",
+    "price"
+  ],
+  "category": "trend",
+  "required_libraries": [
+    "polars"
+  ],
+  "required_calculations": [
+    "Sma"
+  ],
+  "used_columns": [
+    "Close"
+  ],
+  "class_def": "class SmaCrossover:\n    def calc(dfs, params):\n        import polars as pl\n\n        df = dfs[params['condition_timeframe']]\n        short_sma_window = params['short_sma_window']\n        long_sma_window = params['long_sma_window']\n        is_long = params['is_long']\n\n        # Calculate short and long SMAs\n        df = globals().get('Sma').calc(df, {'window': short_sma_window, 'timeframe': params['condition_timeframe']})\n        df = globals().get('Sma').calc(df, {'window': long_sma_window, 'timeframe': params['condition_timeframe']})\n\n        # Check for crossover conditions\n        if is_long:\n            long_cond = (df['Close'] > df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}']) & (df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}'] > df[f'SMA_{params[\"condition_timeframe\"]}_{long_sma_window}'])\n        else:\n            long_cond = (df['Close'] < df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}']) & (df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}'] < df[f'SMA_{params[\"condition_timeframe\"]}_{long_sma_window}'])\n\n        return long_cond\n\n    def calc_lazy(dfs, params):\n        import polars as pl\n\n        df = dfs[params['condition_timeframe']]\n        short_sma_window = params['short_sma_window']\n        long_sma_window = params['long_sma_window']\n        is_long = params['is_long']\n\n        # Calculate short and long SMAs\n        df = globals().get('Sma').calc_lazy(df, {'window': short_sma_window, 'timeframe': params['condition_timeframe']})\n        df = globals().get('Sma').calc_lazy(df, {'window': long_sma_window, 'timeframe': params['condition_timeframe']})\n\n        # Check for crossover conditions\n        if is_long:\n            long_cond = (df['Close'] > df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}']) & (df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}'] > df[f'SMA_{params[\"condition_timeframe\"]}_{long_sma_window}'])\n        else:\n            long_cond = (df['Close'] < df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}']) & (df[f'SMA_{params[\"condition_timeframe\"]}_{short_sma_window}'] < df[f'SMA_{params[\"condition_timeframe\"]}_{long_sma_window}'])\n\n        return long_cond"
+}

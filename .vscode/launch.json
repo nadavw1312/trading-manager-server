@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "main",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/main.py",  // Path to main.py
+            "console": "internalConsole",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "init_mock_data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/init_mock_data.py",  // Path to main.py
+            "console": "internalConsole",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "test_backtest",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/test_backtest.py",  // Path to main.py
+            "console": "internalConsole",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

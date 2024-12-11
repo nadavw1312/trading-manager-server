@@ -1,0 +1,7 @@
+.venv/
+# server/.venv/
+.env
+docs
+mlruns
+__pycache__
+volumes

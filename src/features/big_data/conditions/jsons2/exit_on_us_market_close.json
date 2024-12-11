@@ -1,0 +1,66 @@
+{
+    "name": "Exit on US Market Close Condition",
+    "symbol": "exit_on_us_market_close",
+    "class_name": "ExitOnUSMarketClose",
+    "short_description": "Exit the position at the close of the last candle of the US market trading hours.",
+    "long_description": "This condition is designed to exit a trade at the end of the US market trading day. It allows traders to close their positions before the market closes, avoiding potential overnight risks or gaps. The condition can be customized to specific US market hours based on the exchange or instrument being traded.",
+    "trader_usage_example": "A day trader might use this condition to automatically exit all open positions at the end of the US market trading day, ensuring that no trades are held overnight.",
+    "programmer_usage_example": "ExitOnUSMarketClose.calc(dfs, params={'condition_timeframe': '5m', 'us_market_close_hour': 16, 'us_market_close_minute': 0})",
+    "is_only_exit": true,
+    "actions": [],
+    "logical_operators": [],
+    "params": {
+      "condition_timeframe": "5m",
+      "us_market_close_hour": 16,
+      "us_market_close_minute": 0
+    },
+    "params_fields": {
+      "condition_timeframe": {
+        "type": "string",
+        "options": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "60m",
+          "90m",
+          "1d",
+          "5d",
+          "1wk",
+          "1mo",
+          "3mo"
+        ],
+        "title": "Condition Timeframe",
+        "description": "The timeframe for evaluating the condition."
+      },
+      "us_market_close_hour": {
+        "type": "int",
+        "range": [
+          0,
+          23
+        ],
+        "title": "US Market Close Hour",
+        "description": "The hour (in 24-hour format) when the US market closes."
+      },
+      "us_market_close_minute": {
+        "type": "int",
+        "range": [
+          0,
+          59
+        ],
+        "title": "US Market Close Minute",
+        "description": "The minute when the US market closes."
+      }
+    },
+    "identifiers": [
+      "ExitOnUSMarketClose",
+      "us_market_close"
+    ],
+    "category": "exit",
+    "required_libraries": [
+      "polars"
+    ],
+    "required_calculations": [],
+    "used_columns": [],
+    "class_def": "import polars as pl\n\nclass ExitOnUSMarketClose:\n    @staticmethod\n    def calc(dfs, params):\n        df = dfs[params['condition_timeframe']]\n        us_market_close_hour = params['us_market_close_hour']\n        us_market_close_minute = params['us_market_close_minute']\n\n        return ((df['Datetime'].dt.hour == us_market_close_hour) & (df['Datetime'].dt.minute == us_market_close_minute))\n\n    @staticmethod\n    def calc_lazy(dfs, params):\n        df = dfs[params['condition_timeframe']]\n        us_market_close_hour = params['us_market_close_hour']\n        us_market_close_minute = params['us_market_close_minute']\n\n        return df.with_columns(pl.when((pl.col('Datetime').dt.hour == us_market_close_hour) & (pl.col('Datetime').dt.minute == us_market_close_minute)).then(True).otherwise(False).alias('condition_result'))"
+}

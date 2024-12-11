@@ -1,0 +1,99 @@
+{
+  "name": "AtrCoverage",
+  "symbol": "ATRC",
+  "class_name": "AtrCoverage",
+  "short_description": "Checks if the close price in a smaller timeframe has covered a specified portion of the Average True Range (ATR) of a larger timeframe.",
+  "long_description": "This condition compares the price movement in a smaller timeframe to the Average True Range (ATR) of a larger timeframe. It checks if the close price in the smaller timeframe has covered a specified portion of the ATR in the larger timeframe, indicating potential trend strength or weakness.",
+  "trader_usage_example": "A trader might use this condition to confirm trend strength by ensuring the price covers a significant portion of the ATR in a smaller timeframe, suggesting strong momentum in the direction of the trend in the larger timeframe.",
+  "programmer_usage_example": "AtrCoverage.calc(dfs, params={'condition_timeframe': '5m', 'atr_timeframe': '1d', 'atr_window': 14, 'atr_coverage_portion': 0.5, 'is_long': True})",
+  "is_only_exit": false,
+  "actions": [
+    "greater than"
+  ],
+  "logical_operators": [
+    "and"
+  ],
+  "params": {
+    "condition_timeframe": "5m",
+    "atr_timeframe": "1d",
+    "atr_window": 14,
+    "atr_coverage_portion": 0.5,
+    "is_long": true
+  },
+  "params_fields": {
+    "condition_timeframe": {
+      "type": "string",
+      "options": [
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "60m",
+        "90m",
+        "1d",
+        "5d",
+        "1wk",
+        "1mo",
+        "3mo"
+      ],
+      "title": "Condition Timeframe",
+      "description": "Smaller timeframe for evaluating the condition"
+    },
+    "atr_timeframe": {
+      "type": "string",
+      "options": [
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "60m",
+        "90m",
+        "1d",
+        "5d",
+        "1wk",
+        "1mo",
+        "3mo"
+      ],
+      "title": "ATR Timeframe",
+      "description": "Larger timeframe for calculating ATR"
+    },
+    "atr_window": {
+      "type": "int",
+      "range": [
+        1,
+        1000
+      ],
+      "title": "ATR Window",
+      "description": "Window size for calculating ATR"
+    },
+    "atr_coverage_portion": {
+      "type": "float",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "title": "ATR Coverage Portion",
+      "description": "Portion of ATR to be covered in the smaller timeframe"
+    },
+    "is_long": {
+      "type": "boolean",
+      "title": "Is Long",
+      "description": "Indicates if the condition is for a long position"
+    }
+  },
+  "identifiers": [
+    "ATR",
+    "price"
+  ],
+  "category": "trend",
+  "required_libraries": [
+    "polars"
+  ],
+  "required_calculations": [
+    "Atr"
+  ],
+  "used_columns": [
+    "Close"
+  ],
+  "class_def": "class AtrCoverage:\n    def calc(dfs, params):\n        import polars as pl\n\n        df_cond = dfs[params['condition_timeframe']]\n        df_atr = dfs[params['atr_timeframe']]\n        atr_window = params['atr_window']\n        atr_coverage_portion = params['atr_coverage_portion']\n        is_long = params['is_long']\n\n        # Calculate ATR on the larger timeframe\n        df_atr = globals().get('Atr').calc(df_atr, {'window': atr_window, 'timeframe': params['atr_timeframe']})\n\n        # Select only the necessary columns\n        df_atr = df_atr[['Datetime', f'ATR_{params[\"atr_timeframe\"]}_{atr_window}']]\n\n        # Merge ATR values into the condition timeframe DataFrame\n        df_cond = df_cond.join(df_atr, on='Datetime', how='left')\n\n        # Fill missing ATR values with the previous non-null value\n        df_cond = df_cond.fill_null(strategy='forward')\n\n        # Check if the close price has covered the specified portion of ATR\n        if is_long:\n            long_cond = df_cond['Close'] > df_cond['Close'].shift(1) + atr_coverage_portion * df_cond[f'ATR_{params[\"atr_timeframe\"]}_{atr_window}']\n        else:\n            long_cond = df_cond['Close'] < df_cond['Close'].shift(1) - atr_coverage_portion * df_cond[f'ATR_{params[\"atr_timeframe\"]}_{atr_window}']\n\n        return long_cond\n\n    def calc_lazy(dfs, params):\n        import polars as pl\n\n        df_cond = dfs[params['condition_timeframe']]\n        df_atr = dfs[params['atr_timeframe']]\n        atr_window = params['atr_window']\n        atr_coverage_portion = params['atr_coverage_portion']\n        is_long = params['is_long']\n\n        # Calculate ATR on the larger timeframe\n        df_atr = globals().get('Atr').calc_lazy(df_atr, {'window': atr_window, 'timeframe': params['atr_timeframe']})\n\n        # Select only the necessary columns\n        df_atr = df_atr[['Datetime', f'ATR_{params[\"atr_timeframe\"]}_{atr_window}']]\n\n        # Merge ATR values into the condition timeframe DataFrame\n        df_cond = df_cond.join(df_atr, on='Datetime', how='left')\n\n        # Fill missing ATR values with the previous non-null value\n        df_cond = df_cond.fill_null(strategy='forward')\n\n        # Check if the close price has covered the specified portion of ATR\n        if is_long:\n            long_cond = df_cond['Close'] > df_cond['Close'].shift(1) + atr_coverage_portion * df_cond[f'ATR_{params[\"atr_timeframe\"]}_{atr_window}']\n        else:\n            long_cond = df_cond['Close'] < df_cond['Close'].shift(1) - atr_coverage_portion * df_cond[f'ATR_{params[\"atr_timeframe\"]}_{atr_window}']\n\n        return long_cond"
+}

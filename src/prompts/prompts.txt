@@ -1,0 +1,164 @@
+
+Conditions are trading conditions that can use calculations to evaluate trading signals for entering or exiting positions.
+Calculations are technical indicator or computation based on the data columns that can be used in trading conditions to determine entering or existing positions.
+Calculations structure:
+
+Create a new calculation JSON that defines a technical indicator or computation using the provided data columns.
+If a required calculation is not implemented, assume it exists and use it accordingly.
+These calculations will be used within trading conditions for making entry or exit decisions.
+Instructions:
+Avoid Duplication: Only create a new calculation JSON if it doesn't already exist in the files provided.
+Reusability: Use existing calculations directly without recreating them.
+Structure: If creating a new calculation, include the following parameters and ensure that the calculation logic is fully implemented.
+1. **symbol**: Ensure it's unique and short symbol representing the calculation (e.g., rsi, atr).
+2. **class_name**: Use CamelCase version of the symbol (e.g., Rsi, Atr).
+3. **name**: A descriptive and unique name for the calculation
+4. **short_description**: A brief explanation of what the calculation does, how it works with different parameter values.
+5. **long_description**: A extended explanation of what the calculation does, how it works with different parameter values.
+6. **trader_usage_example**: A simple example described in english which mean use case for the human user/trader on how the calculation,how it should be used for a trading decision.
+7. **programmer_usage_example**: A simple example of how the calculation should be used by <class_name>.calc with full params example.
+8. **returns_structure**: Show the return structure of the calculation, type: pl.DataFrame, columns: array of dict with name: The column name and dtype: The data type of the column.
+9. **params**: A dictionary that includes:
+  - Dynamic parameters relevant to the calculation (e.g., thresholds, periods, etc.) naming should be generic if possible.
+  - No Hardcoded Values, all dynamic values (such as window, threshold, etc.) should be configurable through this dictionary
+  - the value of every key should be default value
+10. **params_fields**: A dictionary where each key is a parameter and value is a dict with
+   - type: Expected data type (e.g., "int", "float").
+   - range: array with 2 values for min and max.
+   - title: A human-readable title.
+   - description: Explanation of the parameter.
+11. **identifiers**: A list of identifiers for the calculation. These should be unique and descriptive like used columns and name and related indicators iclude the symbol.
+12. **category**: The category of the calculation like trend, volatility, momentum, volume, etc...
+13. **required_libraries**: A list of libraries that the calculation uses and import in any place in the code (will be install all to make enviromnet ready)  (e.g., ["polars"])..
+14. **required_calculations**: A list of other calculations that this one depends on.
+15. **plot_type**: Defines the type of chart to plot for this calculation (e.g., 'line', 'area', 'candlestick', 'bar', 'histogram'). Specify what kind of visualization the calculation should use.
+16. **plot_on**: Defines where the plot should be rendered. This can be either 'candlestick' (overlaid on the candlestick chart) or 'separate_pane' (plotted in a separate pane).
+17. **plot_data_format**: A dictionary that includes the following keys:
+    - time_field: The field that contains the timestamp to be used for the x-axis (e.g., 'Datetime').
+    - value_field: The field that contains the calculated value to be plotted (e.g., 'SMA_<window>').
+18. **class_def**: A Python class named by class_name written in string so it will be transfromed to python class,Make sure it contains 2 static functions calc and calc_lazy:
+      - calc (implement logic on regular pl.DataFrame):
+         - look additional files i sent you for available calculations
+         - Uses Polars data manipulation, lookup Polars Docs with an emphasis vectorized operations for efficiency.
+         Double-Check the Documentation: Always refer to the official Polars documentation for version 1 and Polars python version 1.9.0 to verify that the methods used are current and not deprecated.
+Explicitly Avoid Deprecated Methods: Be vigilant in avoiding any methods that are marked as deprecated in the version specified.
+Current stable methods: with_columns,cum_sum,group_by, etc...
+
+         - Takes two arguments:
+         - df: A df:pl.DataFrame with columns 'Datetime', 'Open', 'High', 'Low', 'Close', 'Volume'.
+         - params: The parameters for the calculation
+         important notes:
+         Top of the function must include: import relevant libraries, import polars as pl, other used calculations will be in locals and can be used like locals().get('Ema')...
+         The function should make the calculation on the df with the available params received, ensuring that:
+         Unique Column Names: If the same calculation is applied multiple times (e.g., two SMAs with different windows), ensure unique column names such as SMA_short, SMA_long, or appending the parameter value (e.g., SMA_<window>).
+         Avoid Overwriting: Do not overwrite existing columns when performing new calculations on the same DataFrame. Always assign unique names when calculations are performed with different parameter values on the same column
+         If any required calculation (such as SMA, EMA, etc.) already exists, reuse it dynamically instead of recreating it.
+         Use the existing calculations by referencing them dynamically using locals().get('<class_name>'). For example, if SMA is needed, call it as locals().get('Sma').calc(df, params).
+         The function should return a pl.DataFrame result.
+         Error Handling: In both the calc and calc_lazy methods, include try-except blocks for error handling. The error messages should be meaningful and raise a ValueError.
+      - calc_lazy: same like calc but
+         - Input Handling: The function now accepts either a DataFrame or a LazyFrame. If it's a DataFrame, we convert it to a LazyFrame
+         - Top of the function must include: import relevant libraries, import polars as pl, other used calculations will be in locals and can be used like locals().get('Ema')...
+         - dont use collecting the result on df.
+         - Returning a LazyFrame: Instead of collecting the result, we return the LazyFrame with the new column added.
+19. **test_class_def**: python script in string that contains two separate functions responsilbe to test class_def and 1 function to create test_df and expected_result_df.
+      - create_test_df: Python function written in string used to create and return test_df and expected_result_df.
+The 2 functions will wotk on the same test_df created above them and will copy it.
+These functions should be: 
+      - test_calc: Python function written in string used to test the logic of the calculation 
+         - Top of the function must include: import relevant libraries, import polars as pl etc...
+         - Use create_test_df
+         - running the calculation constructor(Like class_name, Atr, Rsi) on the test_df
+         - Use test_df and relevant params to run the calculation calc on the test_df and compare the expected_result_df using assert.
+      - test_calc_lazy: same like test_calc but test calc_lazy
+
+Complete JSON Output: Provide the entire calculation in JSON format, including all fields: symbol, class_name, name, short_description, long_description, params, params_fields, returns_structure, identifiers, category, plot settings, and required libraries.
+Error Handling: In both the calc and calc_lazy methods, include try-except blocks for error handling. The error messages should be meaningful and raise a ValueError.
+Test Data: In the test_class_def section, the create_test_df function should return both the test DataFrame and the expected result DataFrame. Ensure the expected results align with the calculation logic.
+Test Functions: Provide test_calc and test_calc_lazy functions that validate the logic, using the test DataFrame and comparing it to the expected result. Ensure assertions are used to compare the results.
+Return Structure: The calc and calc_lazy methods should return a pl.DataFrame or pl.LazyFrame, with the calculated column(s) having unique names like SMA_<window> or ATR_<window>.
+Plot Configuration: Include plot-related fields (plot_type, plot_on, plot_data_format) in the JSON, specifying how the calculation should be visualized.
+
+Conditions structure:
+
+Create a Json for a trading condition, which can use the available calculations in additional files i sent you, and if required calculations not implemented use them like they are in the calculations.
+The trading Condition should be **logical** in design, with some using **single timeframes** and others using **multiple timeframes** creatively.
+Some of the conditions can be used to entry and exit by using the opposit, if condition can be used to both, name should be dynamic. 
+Users should be able to use multiple conditions in one backtest to enter and exit positions.
+Any Condition which can be used for entry also can be used for exit but if condition use additional columns it should be used for only exit.
+Naming and symbol should contain used calculations if possible.
+If condition asked is specific, convert it to be dynamic: Hardcoded values  
+The structure is:
+1. name: A descriptive and unique name for the condition (e.g., based on indicators, price patterns, volume behaviors, or other market factors).
+2. symbol: The short symbol representing the condition should be unique..
+3. class_name: like symbol but in camel case.
+4. short_description: A brief explanation of what the condition does, how it works with different parameter values.
+5. long_description: A extended explanation of what the condition does, how it works with different parameter values.
+6. trader_usage_example: A simple example described in english which mean use case for the human user/trader on how the calculation,how it should be used for a trading decision.
+7. programmer_usage_example: A simple example of how the condition should be used with full params example like SmaAboveEta.calc(df, params), LeftAtr.calc(df, params), etc.
+8. is_only_exit: A boolean parameter to determine if the condition can be used only for exit.
+9. params: A dictionary that includes:
+   - condition_timeframe: The primary timeframe for which the condition is evaluated. Timeframes can include:
+   
+     - Intraday: '1m', '5m', '15m', '30m', '60m','90m'
+     - Higher timeframes: '1d', '5d', '1wk', '1mo', '3mo'
+
+   - If applicable, additional supporting timeframes (e.g., trend_timeframe, atr_timeframe, etc.) can be included for conditions that require trend confirmation or multi-timeframe analysis.
+   - is_long: A required boolean parameter to determine if the condition is being used for a long (true) or short (false) position.
+   - Other dynamic parameters relevant to the condition (e.g., thresholds, indicator, periods, etc.).No Hardcoded Values, all dynamic values (such as moving average windows, thresholds, etc.) should be configurable through the params dictionary
+10. params_fields: A dictionary where each key is a parameter and value is a dict with type that defines the expected data type, options or range for that parameter value, title and description. 
+   The dictionary should include:
+   - condition_timeframe: string (must be one of the valid timeframes).
+   - is_long: boolean
+   - Other parameters can include types like int, float, string, boolean, list, or nested dictionaries, options should be range for type of int or float values.
+11. identifiers: A list of identifiers for the condition. These should be unique and descriptive like used columns and indicators.
+12. category: The category of the condition like trend, volatility, momentum, volume, etc...
+13. required_libraries: A list of libraries that the condition uses and import in any place in the code (will be install all to make enviromnet ready).
+14. required_calculations: A list of required calculations
+15. used_columns: A list of used columns.
+16. class_def: A Python class named by class_name written in string so it will be transfromed to python class, Make sure it contains 2 static functions calc and calc_lazy:
+      - calc (implement logic on regular pl.DataFrame):
+         - look additional files i sent you for available calculations
+         - Uses Polars data manipulation, lookup Polars Docs with an emphasis vectorized operations.
+         Double-Check the Documentation: Always refer to the official Polars documentation for version 1 and Polars python version 1.9.0 to verify that the methods used are current and not deprecated.
+Explicitly Avoid Deprecated Methods: Be vigilant in avoiding any methods that are marked as deprecated in the version specified.
+Current stable methods: with_columns,cum_sum,group_by, etc...
+
+         - Takes two arguments:
+         - df: A df with columns 'Datetime', 'Open', 'High', 'Low', 'Close', 'Volume'  If conditions used for exit, the following adiitonal columns ban be used: entry_price (which mean the price we entered the position), enttry_datetime (which mean the datetime we entered the position).
+         - params: The parameters for the condition (e.g., thresholds, periods, timeframes, including is_long for position direction).
+         Top of the function must include: import relevant libraries, import polars as pl, other used calculations will be in locals and can be used like locals().get('Ema')...
+         The function should make the calculation on the df with the available params received, ensuring that:
+         Unique Column Names: If the same calculation is applied multiple times (e.g., two SMAs with different windows), ensure unique column names such as SMA_short, SMA_long, or appending the parameter value (e.g., SMA_<window>).
+         Avoid Overwriting: Do not overwrite existing columns when performing new calculations on the same DataFrame. Always assign unique names when calculations are performed with different parameter values on the same column
+         - If the function used other dynamic calculations like Atr, Sma, etc..., they should be imported and included and used by the constructor like described above, if not exist they should be created in seprate response like this response, here it will be used like exist.
+         - The function should either evaluate signals based on a single timeframe or combine multiple timeframes logically, based on the condition type. The logic should adapt to handle both long and short positions as defined by is_long.
+         - The function should return a pl.Series boolean Series indicating whether the condition is met for a long or short position.
+         - Catch and raise any errors that occur during the execution of the function
+         - should be ready to be used in production
+      - calc_lazy: same like calc but
+         - Input Handling: The function now accepts either a DataFrame or a LazyFrame. If it's a DataFrame, we convert it to a LazyFrame
+         - Top of the function must include: import relevant libraries, import polars as pl, other used calculations will be in locals and can be used like locals().get('Ema')...
+         - dont use collecting the result on df.
+         - Returning a LazyFrame: Instead of collecting the result, we return the LazyFrame with the new column added.
+17. test_class_def: python script in string that contains two separate functions responsilbe to test class_def and 1 function to create test_df and expected_result_df.
+      - create_test_df: Python function written in string used to create and return test_df and expected_result_df.
+The 2 functions will wotk on the same test_df created above them and will copy it.
+These functions should be: 
+      - test_calc: Python function written in string used to test the logic of the condition 
+         - Top of the function must include: import relevant libraries, import polars as pl etc...
+         - Use create_test_df
+         - running the condition constructor(Like class_name,) on the test_df
+         - Use test_df and relevant params to run the condition calc on the test_df and compare the expected_result_df using assert.
+      - test_calc_lazy: same like test_calc but test calc_lazy.
+important notes:
+- If a calculation is already implemented in the additional files i sent you, do not recreate it. Only create new calculations or conditions not present in the additional files i sent you.
+- If a calculation is not implemented in the additional files i sent you and it generic calculation that can be used in more conditions, create a new one like calculation generating strucutre in separate file.
+
+
+Important notes:
+Your are profficient in creating conditions and calculations, senior python developer and senior data scientist.
+Makse sure jsons contain full logic ready to be used in production for class_def and test_class_def.
+Catch and raise any errors that occur during the execution of the function and add relevant comments.
+Make sure everyting created as requested and ready to be used in production, all the list numbers of params are created.
+

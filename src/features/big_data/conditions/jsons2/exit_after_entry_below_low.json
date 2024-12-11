@@ -1,0 +1,61 @@
+{
+    "name": "Exit After Entry Below Low Condition",
+    "symbol": "exit_after_entry_below_low",
+    "class_name": "ExitAfterEntryBelowLow",
+    "short_description": "Exit the position if the price goes below the low of the entry candle after entering the position.",
+    "long_description": "This condition is designed to exit a trade if the price falls below the low of the entry candle. It helps protect profits and limit losses by exiting the trade when the price shows signs of weakness. This condition is suitable for both long and short positions.",
+    "trader_usage_example": "A trader might use this condition to exit a long trade if the price falls below the low of the entry candle, signaling a potential reversal or lack of strength in the upward movement. Similarly, for a short trade, the trader would exit if the price rises above the high of the entry candle.",
+    "programmer_usage_example": "ExitAfterEntryBelowLow.calc(dfs, params={'condition_timeframe': '5m', 'is_long': True})",
+    "is_only_exit": true,
+    "actions": [
+      "less than",
+      "greater than"
+    ],
+    "params": {
+      "condition_timeframe": "5m",
+      "is_long": true
+    },
+    "params_fields": {
+      "condition_timeframe": {
+        "type": "string",
+        "options": [
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "60m",
+          "90m",
+          "1d",
+          "5d",
+          "1wk",
+          "1mo",
+          "3mo"
+        ],
+        "title": "Condition Timeframe",
+        "description": "The timeframe for evaluating the condition."
+      },
+      "is_long": {
+        "type": "boolean",
+        "options": [
+          true,
+          false
+        ],
+        "title": "Is Long",
+        "description": "Indicates whether the condition is for a long (true) or short (false) position."
+      }
+    },
+    "identifiers": [
+      "ExitAfterEntryBelowLow",
+      "entry_Low"
+    ],
+    "category": "exit",
+    "required_libraries": [
+      "polars"
+    ],
+    "required_calculations": [],
+    "used_columns": [
+      "entry_Low"
+    ],
+    "class_def": "import polars as pl\n\nclass ExitAfterEntryBelowLow:\n    @staticmethod\n    def calc(dfs, params):\n        df = dfs[params['condition_timeframe']]\n        is_long = params['is_long']\n        if is_long:\n          return df['Close'] < df['entry_Low']\n        return df['Close'] > df['entry_Low']\n\n    @staticmethod\n    def calc_lazy(dfs, params):\n        df = dfs[params['condition_timeframe']]\n        is_long = params['is_long']\n        if is_long:\n          return df.with_columns(pl.when(pl.col('Close') < pl.col('entry_Low')).then(True).otherwise(False).alias('condition_result'))\n        return df.with_columns(pl.when(pl.col('Close') > pl.col('entry_Low')).then(True).otherwise(False).alias('condition_result'))",
+    "test_class_def": "import polars as pl\nimport numpy as np\nfrom polars.testing import assert_series_equal\n\nclass TestExitAfterEntryBelowLow:\n    @staticmethod\n    def create_test_df():\n        test_df = pl.DataFrame({'Datetime': pl.date_range(low='2024-10-01', high='2024-10-10', interval='1d'),\n                                'Open': [10.0, 10.5, 11.0, 10.8, 10.5, 11.0, 11.5, 12.0, 11.8, 11.5],\n                                'High': [11.0, 11.5, 12.0, 11.8, 11.5, 12.0, 12.5, 13.0, 12.8, 12.5],\n                                'Low': [9.0, 9.5, 10.0, 9.8, 9.5, 10.0, 10.5, 11.0, 10.8, 10.5],\n                                'Close': [10.5, 11.0, 11.5, 11.3, 11.0, 11.5, 12.0, 12.5, 12.3, 12.0],\n                                'Volume': [1000, 1500, 2000, 1800, 1500, 2000, 2500, 3000, 2800, 2500],\n                                'entry_Low': [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]})\n        expected_result_df = pl.DataFrame({'Datetime': pl.date_range(low='2024-10-01', high='2024-10-10', interval='1d'),\n                                          'signal': [False, False, False, False, False, False, False, False, False, False]})  \n        return test_df, expected_result_df\n\n    @staticmethod\n    def test_calc():\n        test_df, expected_result_df = TestExitAfterEntryBelowLow.create_test_df()\n        params = {'condition_timeframe': '1d', 'is_long': True}\n\n        result_df = ExitAfterEntryBelowLow.calc(dfs={'1d': test_df}, params=params)\n        assert_series_equal(result_df, expected_result_df['signal'])\n\n    @staticmethod\n    def test_calc_lazy():\n        test_df, expected_result_df = TestExitAfterEntryBelowLow.create_test_df()\n        params = {'condition_timeframe': '1d', 'is_long': True}\n\n        result_df = ExitAfterEntryBelowLow.calc_lazy(dfs={'1d': test_df}, params=params).collect()\n        assert_series_equal(result_df['condition_result'], expected_result_df['signal'])"
+  }
